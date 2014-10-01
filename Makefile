@@ -1,2 +1,2 @@
 all:
-	gcc scheduler.c -o scheduler
+	gcc scheduler.c -o myscheduler
