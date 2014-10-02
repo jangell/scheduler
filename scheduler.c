@@ -1,6 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+
+struct process
+{
+  int a;
+  int b;
+  int c;
+  int io;
+};
+
+int getNextInt(FILE * fp)
+{
+  char cur;
+  while(! isdigit(cur = fgetc(fp))){}
+  return (cur - '0');
+}
 
 int main(int argv, char * argc[])
 {
@@ -35,7 +51,32 @@ int main(int argv, char * argc[])
     printf("FATAL ERROR: invalid file given\n");
     exit(1);
   }
+
+  char nextChar = ' ';
+  int NUMOFPROCS = 0;
+  while(NUMOFPROCS == 0){
+    nextChar = fgetc(fp);
+    if(isdigit(nextChar)){
+      NUMOFPROCS = nextChar - '0'; // subtracts the ascii value for 0 from int value
+    }
+  }
+
+  int i = 0;
+  struct process procs[NUMOFPROCS];
+  while(i < NUMOFPROCS){
+    procs[i].a = getNextInt(fp);
+    procs[i].b = getNextInt(fp);
+    procs[i].c = getNextInt(fp);
+    procs[i].io = getNextInt(fp);
+    i++;
+  }
+
+  int j = 0;
+  while(j < NUMOFPROCS){
+    printf("%i %i %i %i\n", procs[j].a, procs[j].b, procs[j].c, procs[j].io);
+    j++;
+  }
   
-  
+  fclose(fp);
 
 }
