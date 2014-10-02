@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "myrand.h"
 
 struct process
 {
@@ -23,7 +24,7 @@ int main(int argv, char * argc[])
   
   int verbose = 0;
   int show_rand = 0;
-  FILE * fp;
+  FILE * fp = 0;
   
   int numArgs = argv;
   
@@ -78,5 +79,5 @@ int main(int argv, char * argc[])
   }
   
   fclose(fp);
-
+  
 }
