@@ -1,17 +1,34 @@
+// Jason Angell
+// Main scheduling file for lab 2
+// Operating Systems
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "myrand.h"
+#include "myrand.h" // random number generator
+#include "processStruct.h" // struct process {a, b, c, io, status}
 
-// struct to organize each process by its a, b, c, & io #s
-struct process
+// size function to determine the length of arrays
+#define SIZE(x) (sizeof(x)/sizeof(x[0]))
+
+// linkedList struct to sort processes
+struct listNode
 {
-  int a;
-  int b;
-  int c;
-  int io;
+	int val;
+	struct listNode * next;
 };
+
+// prints out a list
+// used primarily for error-checking
+void printList(struct listNode curNode)
+{
+	int itemNum = 0;
+	while(curNode != NULL){
+		printf("%i:\tval = %i\tnext = %p\n", itemNum, curNode.val, curNode.next);
+		curNode = *(curNode.next);
+	}
+}
 
 // scans through file until it finds an int, then returns it
 // *** not functional for ints of more than one digit ***
@@ -40,6 +57,7 @@ int getVerb(char arg[])
     }
     else{
       printf("Illegal argument given: %s\n", arg);
+      printf("Valid arguments are --verbose and --show-random\n");
       printf("Proceeding in non-verbose mode\n");
     }
     return toRet;
@@ -79,6 +97,7 @@ int main(int argv, char * argc[])
 
   int i = 0;
   struct process procs[NUMOFPROCS];
+  
   while(i < NUMOFPROCS){
     procs[i].a = getNextInt(fp);
     procs[i].b = getNextInt(fp);
@@ -86,13 +105,16 @@ int main(int argv, char * argc[])
     procs[i].io = getNextInt(fp);
     i++;
   }
-
-  int j = 0;
-  while(j < NUMOFPROCS){
-    printf("%i %i %i %i\n", procs[j].a, procs[j].b, procs[j].c, procs[j].io);
-    j++;
-  }
   
   fclose(fp);
+  
+  // ***** actual scheduling starts here *****
+  
+  // uniprogrammed
+  
+	runUni(NUMOFPROCS, &procs);
+	
+	
+	printf("CPU time: %i\nIO time: %i\n", cpuTime, ioTime);
   
 }
