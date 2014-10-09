@@ -1,48 +1,78 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 #include "processStruct.h" // {a, b, c, io, status}
-#include "uniprog.h"
+#include "uniprog.h" // uni header
 
-void runUni(int NUMOFPROCS, process [] procs){
+// message must come before this describing sorted / unsorted
+void printprocs(int numProcs, struct process procs [])
+{
+	int count;
+	for(count = 0; count < numProcs; count++){
+		printf(" ( %i %i %i %i )", procs[count].a, procs[count].b, procs[count].c,\
+					procs[count].io);
+	}
+	printf("\n");
+}
+
+void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 
 	int time = 0;
+	int ftimes[NUMOFPROCS]; // finish times
+	int iotimes[NUMOFPROCS]; // io times
+	int waittimes[NUMOFPROCS]; // waiting times
+	int i;
+	int j;
 	struct process uniprocs[NUMOFPROCS];
-	int procStarts[NUMOFPROCS]; // array to sort processes by start time
-	// sort procs into procStarts
-	
-	struct listNode head;
-	head.val = // work on this. i'm not sure how to sort these as of yet
-	head.next = NULL;
+	struct process sortprocs[NUMOFPROCS]; // used in final outputs
+	int procStarts[NUMOFPROCS]; // array to keep track of sorted processes
+	for(i = 0; i < NUMOFPROCS; i++){
+		procStarts[i] = 0; // initialize all to "unused"
+		iotimes[i] = 0; // io times start at 0
+		waittimes[i] = 0; // wait times start at 0
+	}
 	
 	// populate list with sorted values
-	for(i = 1; i < NUMOFPROCS; i++){
-		
-	}
-	
-	// copy over linkedlist (head) into uniprocs
-	for(i = 0; i < NUMOFPROCS; i++){
-		struct listNode curNode = head;
-		int countProc;
-		for(countProc = 0; countProc < NUMOFPROCS; countProc++){
-			curNode = *(curNode.next);
+	int countUp; // count up from 0 to number of procs of placed procs
+	for(countUp = 0; countUp < NUMOFPROCS; countUp++){
+		int currentMin = INT_MAX; // current minimum start time
+		int minIndex = 0; // index of process with current minimum start time
+		for(j = 0; j < NUMOFPROCS; j++){
+			if((procStarts[j] == 0) && (procs[j].a < currentMin)){
+				currentMin = procs[j].a;
+				minIndex = j;
+				procStarts[j] = 1;
+			}
 		}
-		uniprocs[i] = curNode.val;
-		uniprocs[i].status = 0;
-	}
-	
-	for(i = 0; i < NUMOFPROCS; i++){
-		printf("%i %i %i %i\n", uniprocs[i].a, uniprocs[i].b, uniprocs[i].c, uniprocs[i].io);
+		uniprocs[countUp] = procs[minIndex];
+		uniprocs[countUp].status = 0;
+		sortprocs[countUp] = procs[minIndex];
+		procStarts[minIndex] = 1;
 	}
 	
 	int procOn = 0; // index of current running procedure
 	int procRun = 0; // flag for whether a running process exists
 	int cpuTime = 0;
 	int ioTime = 0;
+	int waitTime = 0;
+	
+	// preprinting:
+	
+	printf("The original input was: %i", NUMOFPROCS);
+	printprocs(NUMOFPROCS, procs);
+	
+	printf("The (sorted) input is:  %i", NUMOFPROCS);
+	printprocs(NUMOFPROCS, uniprocs);
+	
+	printf("\nThis detailed printout gives the state and remaining burst for each process\n\n");
+	
 	while(procOn < NUMOFPROCS){
 	
 		// print verbosity stuff
 		if(verbose == 1){
-			printf("Before cycle\t%i:", time);
+			printf("Before cycle");
+			printf("%6i:", time);
 			for(i = 0; i < NUMOFPROCS; i++){
 				int stat = uniprocs[i].status;
 				char statString[20];
@@ -73,14 +103,15 @@ void runUni(int NUMOFPROCS, process [] procs){
 					strcpy(statString, "ERROR: stat > 3");
 					statVal = -1;
 				}
-				printf("\t%s  %i", statString, statVal);
+				printf("\t%14s%3i", statString, statVal);
 			}
-			printf("\n");
+			printf(".\n");
 		}
 		// end verbosity stuff
 			
 		// if start time equals time, add process
-		for(i = procOn; i < NUMOFPROCS; i++){ // start at procOn (process before this have obviously been added)
+		for(i = procOn; i < NUMOFPROCS; i++){ // start at procOn
+						//(process before this have obviously been added)
 			if(procs[i].a == time){
 				uniprocs[i].status = 1;
 				// no running process? why not this one!
@@ -103,6 +134,7 @@ void runUni(int NUMOFPROCS, process [] procs){
 		// otherwise, decrement io burst
 		else{
 			uniprocs[procOn].io--;
+			iotimes[procOn]++;
 			ioTime++;
 			// if io goes to zero, reset b and io
 			if(uniprocs[procOn].io == 0){
@@ -110,9 +142,19 @@ void runUni(int NUMOFPROCS, process [] procs){
 				uniprocs[procOn].io = procs[procOn].io;
 			}
 		}
+		
+		// update wait times for all unstarted processes
+		for(i = procOn + 1; i < NUMOFPROCS; i++){
+			if(uniprocs[i].status == 1){
+				waittimes[i]++;
+				waitTime++;
+			}
+		}
+		
 		// if the process went to zero time, terminate it!
 		if(uniprocs[procOn].c == 0){
 			uniprocs[procOn].status = 3;
+			ftimes[procOn] = time + 1;
 			procOn++;
 		}
 		// that was one clock cycle, dawg
@@ -122,5 +164,39 @@ void runUni(int NUMOFPROCS, process [] procs){
 		uniprocs[procOn].status = 2;
 		
 	}
-
+	
+	// postprinting:
+	
+	int totalturnaround = 0;
+	
+	// print process-specific stats
+	for(i = 0; i < NUMOFPROCS; i++){
+		printf("\n");
+		printf("Process %i:\n", i);
+		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sortprocs[i].a, sortprocs[i].b,\
+					sortprocs[i].c, sortprocs[i].io);
+		printf("\tFinishing time: %i\n", ftimes[i]);
+		int turnTime = ftimes[i] - sortprocs[i].a;
+		totalturnaround += turnTime;
+		printf("\tTurnaround time: %i\n", turnTime);
+		printf("\tI/O time: %i\n", iotimes[i]);
+		printf("\tWaiting time: %i\n", waittimes[i]);
+	}
+	
+	// print general summary
+	
+	printf("\n");
+	printf("Summary Data:\n");
+	printf("\tFinishing time: %i\n", time);
+	float cputil = (float) cpuTime / time;
+	printf("\tCPU Utilization: %6f\n", cputil);
+	float ioutil = (float) ioTime / time;
+	printf("\tI/O Utilization: %6f\n", ioutil);
+	float thru = (float) NUMOFPROCS * (100. / time);
+	printf("\tThroughput: %.6f processes per hundred cycles\n", thru);
+	float turnavg = (float) totalturnaround / NUMOFPROCS;
+	printf("\tAverage turnaround time: %.6f\n", turnavg);
+	float waitavg = (float) waitTime / NUMOFPROCS;
+	printf("\tAverage waiting time: %.6f\n", waitavg);
+	
 }

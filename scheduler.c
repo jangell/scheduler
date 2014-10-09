@@ -7,27 +7,21 @@
 #include <string.h>
 #include <ctype.h>
 #include "myrand.h" // random number generator
-#include "processStruct.h" // struct process {a, b, c, io, status}
+#include "processStruct.h" // struct process {a, b, c, io, status} & linked list
+#include "uniprog.h" // uniprogramming
 
 // size function to determine the length of arrays
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
 
-// linkedList struct to sort processes
-struct listNode
-{
-	int val;
-	struct listNode * next;
-};
-
-// prints out a list
-// used primarily for error-checking
+// prints linked list in order (primarily for debugging
 void printList(struct listNode curNode)
 {
 	int itemNum = 0;
-	while(curNode != NULL){
+	while(curNode.next != NULL){
 		printf("%i:\tval = %i\tnext = %p\n", itemNum, curNode.val, curNode.next);
 		curNode = *(curNode.next);
 	}
+	printf("%i:\tval = %i\tnext = %p\n", itemNum, curNode.val, curNode.next);
 }
 
 // scans through file until it finds an int, then returns it
@@ -112,9 +106,8 @@ int main(int argv, char * argc[])
   
   // uniprogrammed
   
-	runUni(NUMOFPROCS, &procs);
+	runUni(verbose, NUMOFPROCS, &procs);
 	
 	
-	printf("CPU time: %i\nIO time: %i\n", cpuTime, ioTime);
   
 }
