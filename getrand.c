@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "myrand.h"
 
 char fileName[] = "randnums.txt";
 FILE * fp;
+int maxRand;
+int minRand;
 
 void randInit()
 {
@@ -15,15 +18,15 @@ int closeRand()
   return fclose(fp);
 }
 
-int getRand()
+float getRand()
 {
+	float f = 0;
   if(fp == 0){
     randInit();
   }
-  int i = 0;
-  fscanf(fp, "%d", &i);
-  if(i == 0){
+  fscanf(fp, "%f", &f);
+  if(f == 0){
     printf("ERROR - END OF FILE");
   }
-  return i; 
+  return f/INT_MAX; // returns a floating-point value between 0 and 1 
 }

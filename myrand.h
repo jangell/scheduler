@@ -2,7 +2,7 @@
 #define _OTHER_H_
 
 void randInit();
-int getRand();
+float getRand();
 int closeRand();
 
 #endif
