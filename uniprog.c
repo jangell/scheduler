@@ -70,7 +70,7 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	printprocs(NUMOFPROCS, procs);
 	
 	printf("The (sorted) input is:  %i", NUMOFPROCS);
-	printprocs(NUMOFPROCS, uniprocs);
+	printprocs(NUMOFPROCS, sprocs);
 	
 	if(verbose > 0){
 		printf("\nThis detailed printout gives the state and remaining burst for each process\n\n");

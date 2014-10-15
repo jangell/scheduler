@@ -113,8 +113,6 @@ int main(int argv, char * argc[])
   }
   int sortcount;
   int j;
-  int minind;
-  int mintime;
   for(sortcount = 0; sortcount < NUMOFPROCS; sortcount++){
   	int minind;
   	int mintime = INT_MAX;
@@ -125,8 +123,8 @@ int main(int argv, char * argc[])
 			}
   	}
   	// add it to the appropriate place in the sortedprocs array
-  	sortedprocs[sortcount] = procs[j];
-  	sortflags[j] = 1;
+  	sortedprocs[sortcount] = procs[minind];
+  	sortflags[minind] = 1;
   }
   
   // ****** DO NOT EDIT PROCS OR SORTEDPROCS ******
