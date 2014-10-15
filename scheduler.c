@@ -102,6 +102,10 @@ int main(int argv, char * argc[])
   
   fclose(fp);
   
+  // sort processes by order of start time
+  
+  
+  
   // ***** actual scheduling starts here *****
   
   // uniprogrammed

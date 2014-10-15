@@ -18,15 +18,15 @@ int closeRand()
   return fclose(fp);
 }
 
-float getRand()
+int getRand()
 {
-	float f = 0;
+	int i = 0;
   if(fp == 0){
     randInit();
   }
-  fscanf(fp, "%f", &f);
-  if(f == 0){
+  fscanf(fp, "%i", &i);
+  if(i == 0){
     printf("ERROR - END OF FILE");
   }
-  return f/INT_MAX; // returns a floating-point value between 0 and 1 
+  return i; // returns int between ~1 and MAX_INT
 }

@@ -17,23 +17,31 @@ void printprocs(int numProcs, struct process procs [])
 	printf("\n");
 }
 
-int getBurst(int n)
+int getBurst(int n, int verbose)
 {
-	return (1 + getRand() * n);
+	int rand = getRand();
+	if(verbose == 2){
+		printf("Find burst when choosing ready process to run %i\n", rand);
+	}
+	return (1 + rand%n);
 }
 
 void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 
 	randInit();
 
-	int time = 0;
+	// create simulated "process table" with arrays and values
+	int time = 0; // running time
 	int ftimes[NUMOFPROCS]; // finish times
 	int iotimes[NUMOFPROCS]; // io times
 	int waittimes[NUMOFPROCS]; // waiting times
+	// struct of processes on which the scheduler is based
+	struct process uniprocs[NUMOFPROCS];
+	
+	// counting variables
 	int i;
 	int j;
-	struct process uniprocs[NUMOFPROCS];
-	struct process sortprocs[NUMOFPROCS]; // used in final outputs
+	
 	int procStarts[NUMOFPROCS]; // array to keep track of sorted processes
 	for(i = 0; i < NUMOFPROCS; i++){
 		procStarts[i] = 0; // initialize all to "unused"
@@ -55,11 +63,10 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 		}
 		uniprocs[countUp] = procs[minIndex];
 		uniprocs[countUp].status = 0;
-		sortprocs[countUp] = procs[minIndex];
 		procStarts[minIndex] = 1;
 	}
 	
-	int procOn = -1; // index of current running procedure
+	int procOn = 0; // index of current running procedure
 	int cpuTime = 0;
 	int ioTime = 0;
 	int waitTime = 0;
@@ -76,9 +83,10 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 		printf("\nThis detailed printout gives the state and remaining burst for each process\n\n");
 	}
 	
-	// generate random bursts for first procs
-	uniprocs[0].b = getBurst(sortprocs[0].b);
-	uniprocs[0].io = getBurst(sortprocs[0].io);
+	int nextBurst;
+	int task; // flag: 0 = cpu burst, 1 = io burst
+	int cputogo = 0;
+	struct process curproc;
 	
 	while(procOn < NUMOFPROCS){
 	
@@ -122,71 +130,31 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 		}
 		// end verbosity stuff
 		
-		// update wait times for all unstarted processes
-		if(time > 0){
-			for(i = procOn + 1; i < NUMOFPROCS; i++){
-				if(uniprocs[i].status == 1){
-					waittimes[i]++;
-					waitTime++;
-				}
-			}
+		// let's do this
+		nextBurst = 0;
+		task = 0;
+		curproc = uniprocs[procOn];
+		if(curproc.a > time){
+			cputogo = curproc.c; // processing time left on the current task
 		}
-			
-		// if start time equals time, add process
-		for(i = procOn; i < NUMOFPROCS; i++){ // start at procOn
-						//(process before this have obviously been added)
-			if(uniprocs[i].a == time){
-				uniprocs[i].status = 1;
-			}
-		}
-	
-		// assume time is left on current process (instant context switching)
 		
-		// if no process started, start the next ready process!
-		if(procOn == -1){
-			int n;
-			for(n = 0; n < NUMOFPROCS; n++){
-				if(uniprocs[n].status == 1){
-					procOn = n;
-					uniprocs[n].status = 2;
-					break;
-				}
+		
+		// scheduling for a single process here
+		while(cputogo > 0){
+			if(task == 0){
+				nextBurst = getBurst(curproc.b, verbose);
 			}
-		}
-		// check if current burst is still happening
-		else if(uniprocs[procOn].b > 0){
-			uniprocs[procOn].b--;
-			uniprocs[procOn].c--;
-			cpuTime++;
-		}
-		// otherwise, decrement io burst
-		else{
-			uniprocs[procOn].io--;
-			iotimes[procOn]++;
-			ioTime++;
-			// if io goes to zero, reset b and io
-			if(uniprocs[procOn].io == 0){
-				uniprocs[procOn].b = getBurst(sortprocs[procOn].b);
-				uniprocs[procOn].io = getBurst(sortprocs[procOn].io);
+			else if(task == 1){
+				nextBurst = getBurst(curproc.io, verbose);
+			}
+			while(nextBurst > 0){
+				if(verbose > 0){
+					printverb(
+				}
+				
 			}
 		}
 		
-		// if the process went to zero time, terminate it!
-		if(uniprocs[procOn].c == 0){
-			uniprocs[procOn].status = 3;
-			ftimes[procOn] = time;
-			procOn++;
-			// generate random times for first bursts
-			uniprocs[procOn].b = getBurst(sortprocs[procOn].b);
-			uniprocs[procOn].io = getBurst(sortprocs[procOn].io);
-		}
-		// that was one clock cycle, dawg (unless we're done)
-		if(procOn < NUMOFPROCS){
-			time++;
-			
-			// update status
-			uniprocs[procOn].status = 2;
-		}
 		
 	}
 	
@@ -198,10 +166,10 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 	for(i = 0; i < NUMOFPROCS; i++){
 		printf("\n");
 		printf("Process %i:\n", i);
-		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sortprocs[i].a, sortprocs[i].b,\
-					sortprocs[i].c, sortprocs[i].io);
+		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", uniprocs[i].a, uniprocs[i].b,\
+					uniprocs[i].c, uniprocs[i].io);
 		printf("\tFinishing time: %i\n", ftimes[i]);
-		int turnTime = ftimes[i] - sortprocs[i].a;
+		int turnTime = ftimes[i] - uniprocs[i].a;
 		totalturnaround += turnTime;
 		printf("\tTurnaround time: %i\n", turnTime);
 		printf("\tI/O time: %i\n", iotimes[i]);
