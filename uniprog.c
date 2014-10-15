@@ -26,7 +26,7 @@ int getBurst(int n, int verbose)
 	return (1 + rand%n);
 }
 
-void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
+void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs []){
 
 	randInit();
 
@@ -42,28 +42,21 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 	int i;
 	int j;
 	
+	// copy sprocs over into another (mutable) array
+	for(i = 0; i < NUMOFPROCS; i++){
+		uniprocs[i] = sprocs[i];
+	}
+	
+	uniprocs[0].a--;
+	printf("subtracted one from uniprocs\nsprocs.a: %i\n", sprocs[0].a);
+	printf("uniprocs.a: %i\n", uniprocs[0].a);
+	
+	
 	int procStarts[NUMOFPROCS]; // array to keep track of sorted processes
 	for(i = 0; i < NUMOFPROCS; i++){
 		procStarts[i] = 0; // initialize all to "unused"
 		iotimes[i] = 0; // io times start at 0
 		waittimes[i] = 0; // wait times start at 0
-	}
-	
-	// populate list with sorted values
-	int countUp; // count up from 0 to number of procs of placed procs
-	for(countUp = 0; countUp < NUMOFPROCS; countUp++){
-		int currentMin = INT_MAX; // current minimum start time
-		int minIndex = 0; // index of process with current minimum start time
-		for(j = 0; j < NUMOFPROCS; j++){
-			if((procStarts[j] == 0) && (procs[j].a < currentMin)){
-				currentMin = procs[j].a;
-				minIndex = j;
-				procStarts[j] = 1; // flag for "current process has already been put in the list"
-			}
-		}
-		uniprocs[countUp] = procs[minIndex];
-		uniprocs[countUp].status = 0;
-		procStarts[minIndex] = 1;
 	}
 	
 	int procOn = 0; // index of current running procedure
@@ -148,9 +141,10 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [] ){
 				nextBurst = getBurst(curproc.io, verbose);
 			}
 			while(nextBurst > 0){
-				if(verbose > 0){
-					printverb(
-				}
+				
+				// verbosity should go here
+				
+				
 				
 			}
 		}

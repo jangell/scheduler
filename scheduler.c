@@ -6,9 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 #include "myrand.h" // random number generator
 #include "processStruct.h" // struct process {a, b, c, io, status} & linked list
 #include "uniprog.h" // uniprogramming
+#include "fcfs.h" // fcfs
 
 // size function to determine the length of arrays
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
@@ -104,14 +106,34 @@ int main(int argv, char * argc[])
   
   // sort processes by order of start time
   
+  struct process sortedprocs[NUMOFPROCS];
+  int sortflags[NUMOFPROCS]; // array to flag which processes have been sorted by time
+  for(i = 0; i < NUMOFPROCS; i++){
+  	sortflags[i] = 0; // set all to zero
+  }
+  int sortcount;
+  int j;
+  int minind;
+  int mintime;
+  for(sortcount = 0; sortcount < NUMOFPROCS; sortcount++){
+  	int minind;
+  	int mintime = INT_MAX;
+  	for(j = 0; j < NUMOFPROCS; j++){ // cycle through, checking each start against min
+			if(procs[j].a < mintime && sortflags[j] == 0){
+				minind = j;
+				mintime = procs[j].a;
+			}
+  	}
+  	// add it to the appropriate place in the sortedprocs array
+  	sortedprocs[sortcount] = procs[j];
+  	sortflags[j] = 1;
+  }
   
+  // ****** DO NOT EDIT PROCS OR SORTEDPROCS ******
+  // actual scheduling here
   
-  // ***** actual scheduling starts here *****
-  
-  // uniprogrammed
-  
-	runUni(verbose, NUMOFPROCS, &procs);
-	
+	runUni(verbose, NUMOFPROCS, &procs, &sortedprocs);
+	runfcfs(verbose, NUMOFPROCS, &procs, &sortedprocs);
 	
   
 }
