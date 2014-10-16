@@ -26,7 +26,7 @@ int getRand()
   }
   fscanf(fp, "%i", &i);
   if(i == 0){
-    printf("ERROR - END OF FILE");
+    printf("ERROR - END OF FILE\n");
   }
   return i; // returns int between ~1 and MAX_INT
 }
