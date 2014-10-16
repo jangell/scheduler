@@ -5,7 +5,6 @@
 #include "myrand.h"
 #include "processStruct.h" // {a, b, c, io, status}
 #include "uniprog.h" // uni header
-#include "printing.h"
 
 // message must come before this describing sorted / unsorted
 void printprocs(int numProcs, struct process procs [])
@@ -16,7 +15,46 @@ void printprocs(int numProcs, struct process procs [])
 					procs[count].io);
 	}
 	printf("\n");
+}// print current processes if verbose
+void printverb(int NUMOFPROCS, int time, int task, int nextBurst, struct process uniprocs [])
+{
+	int i;
+	printf("Before cycle");
+	printf("%6i:", time);
+	for(i = 0; i < NUMOFPROCS; i++){
+		int stat = uniprocs[i].status;
+		char statString[20];
+		int statVal;
+		if(stat == 0){
+		  strcpy(statString, "unstarted");
+			statVal = 0;
+		}
+		else if(stat == 1){
+			strcpy(statString, "ready");
+			statVal = 0;
+		}
+		else if(stat == 2){
+			statVal = nextBurst;
+			if(task == 0){
+				strcpy(statString, "running");
+			}
+			else{
+				strcpy(statString, "blocked");
+			}
+		}
+		else if(stat == 3){
+			strcpy(statString, "terminated");
+			statVal = 0;
+		}
+		else{
+			strcpy(statString, "ERROR: stat > 3");
+			statVal = -1;
+		}
+		printf("\t%12s%3i", statString, statVal);
+	}
+	printf(".\n");
 }
+
 
 void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs []){
 
