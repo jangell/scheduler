@@ -30,3 +30,12 @@ int getRand()
   }
   return i; // returns int between ~1 and MAX_INT
 }
+
+int getBurst(int n, int verbose)
+{
+	int rand = getRand();
+	if(verbose == 2){
+		printf("Find burst when choosing ready process to run %i\n", rand);
+	}
+	return (1 + rand%n);
+}

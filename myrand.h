@@ -4,5 +4,6 @@
 void randInit();
 int getRand();
 int closeRand();
+int getBurst();
 
 #endif
