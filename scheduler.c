@@ -11,6 +11,8 @@
 #include "processStruct.h" // struct process {a, b, c, io, status} & linked list
 #include "uniprog.h" // uniprogramming
 #include "fcfs.h" // fcfs
+#include "sjf.h" // sjf
+
 
 // size function to determine the length of arrays
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
@@ -132,5 +134,6 @@ int main(int argv, char * argc[])
   
 	// runUni(verbose, NUMOFPROCS, &procs, &sortedprocs);
 	runfcfs(verbose, NUMOFPROCS, &procs, &sortedprocs);
+	runsjf(verbose, NUMOFPROCS, &procs, &sortedprocs);
   
 }
