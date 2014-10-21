@@ -81,8 +81,7 @@ void runfcfs(int verbose, int NUMOFPROCS, struct process procs [], struct proces
 		iotimes[i] = 0;
 		readycpu[i] = 0;
 		readyio[i] = 0;
-		status[i] = 0; // not the same as uniprog
-		// 0=unstarted; 1=ready; 2=running; 3=blocked; 4=terminated
+		status[i] = 0; // 0=unstarted; 1=ready; 2=running; 3=blocked; 4=terminated
 	}
 	
 	int tempio; // used to postpone updating the IO to avoid simultaneous cpu & io

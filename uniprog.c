@@ -11,50 +11,45 @@ void printprocs(int numProcs, struct process procs [])
 {
 	int count;
 	for(count = 0; count < numProcs; count++){
-		printf(" ( %i %i %i %i )", procs[count].a, procs[count].b, procs[count].c,\
+		printf(" %i ( %i %i %i %i )", numProcs, procs[count].a, procs[count].b, procs[count].c,\
 					procs[count].io);
 	}
 	printf("\n");
-}// print current processes if verbose
-void printverb(int NUMOFPROCS, int time, int task, int nextBurst, struct process uniprocs [])
-{
-	int i;
-	printf("Before cycle");
-	printf("%6i:", time);
-	for(i = 0; i < NUMOFPROCS; i++){
-		int stat = uniprocs[i].status;
-		char statString[20];
-		int statVal;
-		if(stat == 0){
-		  strcpy(statString, "unstarted");
+}
+
+void uprintverb(int time, int NP, struct process myprocs []){
+	printf("Before cycle %5i:", time);
+	char statString[20];
+	int statVal;
+	for(int proc = 0; proc < NP; proc++){
+		if(myprocs[proc].status == 0){
+			strcpy(statString, "unstarted");
 			statVal = 0;
 		}
-		else if(stat == 1){
+		else if(myprocs[proc].status == 1){
 			strcpy(statString, "ready");
 			statVal = 0;
 		}
-		else if(stat == 2){
-			statVal = nextBurst;
-			if(task == 0){
-				strcpy(statString, "running");
-			}
-			else{
-				strcpy(statString, "blocked");
-			}
+		else if(myprocs[proc].status == 2){
+			strcpy(statString, "running");
+			statVal = myprocs[proc].b;
 		}
-		else if(stat == 3){
+		else if(myprocs[proc].status == 3){
+			strcpy(statString, "blocked");
+			statVal = myprocs[proc].io;
+		}
+		else if(myprocs[proc].status == 4){
 			strcpy(statString, "terminated");
 			statVal = 0;
 		}
 		else{
-			strcpy(statString, "ERROR: stat > 3");
+			strcpy(statString, "ERROR - BAD STATUS");
 			statVal = -1;
 		}
-		printf("\t%12s%3i", statString, statVal);
+		printf("%14s:%6i", statString, statVal);
 	}
-	printf(".\n");
+	printf("\n");
 }
-
 
 void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs []){
 
@@ -63,135 +58,138 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	// struct of processes on which the scheduler is based
 	struct process uniprocs[NUMOFPROCS];
 	
+	int finishtimes[NUMOFPROCS];
+	int iotimes[NUMOFPROCS];
+	int waittimes[NUMOFPROCS];
+	int cputime = 0;
+	
 	// copy sprocs over into another (mutable) array
-	// for the extent of the uniprocessor, use uniprocs, NOT sprocs
+	// use sprocs as reference for burst and io length of uniprocs
 	int i;
 	for(i = 0; i < NUMOFPROCS; i++){
 		uniprocs[i] = sprocs[i];
+		uniprocs[i].b = 0; // start without cpu burst
+		uniprocs[i].io = 0; // start without io burst
+		uniprocs[i].status = 0; // 0=unstarted; 1=ready; 2=running; 3=blocked; 4=terminated
+		// initialize arrays to zero
+		finishtimes[i] = 0;
+		iotimes[i] = 0;
+		waittimes[i] = 0;
 	}
 	
-	int procStarts[NUMOFPROCS]; // array to keep track of sorted processes
+	// do that scheduling stuff
+	int completedProcs = 0;
+	int curproc = 0;
+	int time = 0;
+	int ioburstflag = 0; // flag to generate new io burst
 	
-	int ftimes[NUMOFPROCS]; // finish times
-	int iotimes[NUMOFPROCS]; // io times
-	int waittimes[NUMOFPROCS]; // waiting times
-	int time = 0; // running time
-	int cpuTime = 0; // total cpu time used thus far
-	int ioTime = 0; // total io time used thus far
-	int waitTime = 0; // total waiting time of process
-	
-	for(i = 0; i < NUMOFPROCS; i++){
-		procStarts[i] = 0; // initialize all to "unused"
-		iotimes[i] = 0; // io times start at 0
-		waittimes[i] = 0; // wait times start at 0
-	}
-	
-	// preprinting:
-	
-	printf("The original input was: %i", NUMOFPROCS);
-	printprocs(NUMOFPROCS, procs);
-	
-	printf("The (sorted) input is:  %i", NUMOFPROCS);
-	printprocs(NUMOFPROCS, sprocs);
-	
-	if(verbose > 0){
-		printf("\nThis detailed printout gives the state and remaining burst for each process\n\n");
-	}
-	
-	int procOn = 0; // index of current running procedure
-	int nextBurst = 0;
-	int task = 1; // flag: 0 = cpu burst, 1 = io burst
-	// inverts BEFORE getting burst size; therefore, cpu comes first if 1 here
-	int cputogo = 0; // cpu time to go in current process ("b")
-	
-	
-	while(procOn < NUMOFPROCS){
+	while(completedProcs < NUMOFPROCS){
 		
-		// let's do this. butter side down
-		if(uniprocs[procOn].a > time){
-			cputogo = uniprocs[procOn].c; // processing time left on the current task
-			
-		}
-		
-		// print start statuses here
 		if(verbose > 0){
-			printverb(NUMOFPROCS, time, task, nextBurst, uniprocs);
+			uprintverb(time, NUMOFPROCS, uniprocs); // print statuses
 		}
 		
-		// increment wait times of all waiting processes (index > procOn)
-		int i;
-		for(i = procOn + 1; i < NUMOFPROCS; i++){
-			waitTime++;
-			waittimes[i]++;
-		}
-		
-		// run current process, either cpu or io
-		if(cputogo > 0){
-			// get new burst if burst is zero
-			if(nextBurst == 0){
-				task = (task + 1)%2; // returns (2%2) = 0 if 1 and (1%2) = 1 if 0
-				if(task == 0){
-					nextBurst = getBurst(uniprocs[procOn].b, verbose);
-				}
-				else if(task == 1){
-					nextBurst = getBurst(uniprocs[procOn].io, verbose);
-				}
+		if(uniprocs[curproc].status == 2){
+			// run cpu
+			uniprocs[curproc].b--;
+			uniprocs[curproc].c--;
+			cputime++;
+			if(uniprocs[curproc].c == 0){ // terminate process
+				uniprocs[curproc].status = 4;
+				finishtimes[curproc] = time;
+				completedProcs++;
+				curproc++;
+				uniprocs[curproc].status = 1; // burst generated in "generate new burst" block below
 			}
-			if(nextBurst > 0){
-				nextBurst--;
-				time++;
-				if(task == 0){
-					cputogo--;
-					cpuTime++;
-				}
-				else if(task == 1){
-					ioTime++;
-					iotimes[procOn]++;
-				}
-			}
-			if(cputogo == 0){
-				ftimes[procOn] = time;
-				procOn++;
+			else if(uniprocs[curproc].b == 0){ // terminate burst; generate io burst
+				ioburstflag = 1;
 			}
 		}
 		
-		// aaaand that was one clock cycle!
-		time++;
+		if(uniprocs[curproc].status == 3){
+			iotimes[curproc]++;
+			uniprocs[curproc].io--;
+			if(uniprocs[curproc].io == 0){ // generate cpu burst
+				uniprocs[curproc].status = 1; // burst generated below
+			}
+		}
+		
+		// generate io burst here to avoid running io and cpu for same process in same cycle
+		if(ioburstflag){
+			ioburstflag = 0; // reset flag
+			uniprocs[curproc].io = getBurst(sprocs[curproc].io, verbose);
+			uniprocs[curproc].status = 3;
+		}
+		
+		// initialize new processes by time at the end of the cycle
+		for(i = 0; i < NUMOFPROCS; i++){
+			if(uniprocs[i].a == time){
+				// initialize process
+				uniprocs[i].status = 1;
+			}
+		}
+		
+		// generate new burst if necessary
+		if(uniprocs[curproc].status == 1){
+			uniprocs[curproc].b = getBurst(sprocs[curproc].b, verbose);
+			uniprocs[curproc].status = 2; // running next cycle
+		}
+		
+		// update wait times (cannot be waiting process before curproc
+		for(i = curproc; i < NUMOFPROCS; i++){
+			if(uniprocs[i].status == 1){
+				waittimes[i]++;
+			}
+		}
+		
+		if(completedProcs < NUMOFPROCS){ // don't increment time if last process finished
+			time++;
+		}
 		
 	}
 	
-	// postprinting:
+	printf("The original output was: ");
+	printprocs(NUMOFPROCS, procs);
+	printf("The (sorted) input is: ");
+	printprocs(NUMOFPROCS, procs);
+	printf("\n\n");
 	
-	int totalturnaround = 0;
+	// print summaries of each process
 	
-	// print process-specific stats
 	for(i = 0; i < NUMOFPROCS; i++){
 		printf("\n");
 		printf("Process %i:\n", i);
-		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", uniprocs[i].a, uniprocs[i].b,\
-					uniprocs[i].c, uniprocs[i].io);
-		printf("\tFinishing time: %i\n", ftimes[i]);
-		int turnTime = ftimes[i] - uniprocs[i].a;
-		totalturnaround += turnTime;
-		printf("\tTurnaround time: %i\n", turnTime);
+		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sprocs[i].a, sprocs[i].b, sprocs[i].c, sprocs[i].io);
+		printf("\tFinishing time: %i\n", finishtimes[i]);
 		printf("\tI/O time: %i\n", iotimes[i]);
 		printf("\tWaiting time: %i\n", waittimes[i]);
 	}
 	
-	// print general summary
+	// generate values for summary below
+
+	int totalIO = 0;
+	int totalTurn = 0;
+	int totalWait = 0;
+	for(i = 0; i < NUMOFPROCS; i++){
+		totalIO += iotimes[i];
+		totalTurn += (finishtimes[i] - sprocs[i].a); // finish - start = turn
+		totalWait += waittimes[i];
+	}
+	float cpuuse = ((float) cputime) / time;
+	float iouse = ((float) totalIO) / time;
+	float through = 100. * ((float) NUMOFPROCS) / time;
+	float avgturn = ((float) totalTurn) / NUMOFPROCS;
+	float avgwait = ((float) totalWait) / NUMOFPROCS;
+	
+	// print overall summary
 	
 	printf("\n");
 	printf("Summary Data:\n");
-	printf("\tFinishing time: %i\n", time);
-	float cputil = (float) cpuTime / time;
-	printf("\tCPU Utilization: %6f\n", cputil);
-	float ioutil = (float) ioTime / time;
-	printf("\tI/O Utilization: %6f\n", ioutil);
-	float thru = (float) NUMOFPROCS * (100. / time);
-	printf("\tThroughput: %.6f processes per hundred cycles\n", thru);
-	float turnavg = (float) totalturnaround / NUMOFPROCS;
-	printf("\tAverage turnaround time: %.6f\n", turnavg);
-	float waitavg = (float) waitTime / NUMOFPROCS;
-	printf("\tAverage waiting time: %.6f\n", waitavg);
+	printf("\tFinishing time:%i\n", time);
+	printf("\tCPU Utilization: %6f\n", cpuuse);
+	printf("\tI/O Utilization: %6f\n", iouse);
+	printf("\tThroughput: %6f processes per hundred cycles\n", through);
+	printf("\tAverage turnaround time: %6f\n", avgturn);
+	printf("\tAverage waiting time: %6f\n", avgwait);
 	
 }
