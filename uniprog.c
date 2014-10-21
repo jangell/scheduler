@@ -83,6 +83,7 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	int time = 0;
 	int ioburstflag = 0; // flag to generate new io burst
 	
+	// actual cycle loop
 	while(completedProcs < NUMOFPROCS){
 		
 		if(verbose > 0){
@@ -99,7 +100,9 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 				finishtimes[curproc] = time;
 				completedProcs++;
 				curproc++;
-				uniprocs[curproc].status = 1; // burst generated in "generate new burst" block below
+				if(curproc < NUMOFPROCS){ // (not after last process terminates)
+					uniprocs[curproc].status = 1; // burst generated in "generate new burst" block below
+				}
 			}
 			else if(uniprocs[curproc].b == 0){ // terminate burst; generate io burst
 				ioburstflag = 1;
@@ -185,7 +188,7 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	
 	printf("\n");
 	printf("Summary Data:\n");
-	printf("\tFinishing time:%i\n", time);
+	printf("\tFinishing time: %i\n", time);
 	printf("\tCPU Utilization: %6f\n", cpuuse);
 	printf("\tI/O Utilization: %6f\n", iouse);
 	printf("\tThroughput: %6f processes per hundred cycles\n", through);

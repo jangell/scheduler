@@ -13,23 +13,7 @@
 #include "fcfs.h" // fcfs
 #include "sjf.h" // sjf
 
-
-// size function to determine the length of arrays
-#define SIZE(x) (sizeof(x)/sizeof(x[0]))
-
-// prints linked list in order (primarily for debugging
-void printList(struct listNode curNode)
-{
-	int itemNum = 0;
-	while(curNode.next != NULL){
-		printf("%i:\tval = %i\tnext = %p\n", itemNum, curNode.val, curNode.next);
-		curNode = *(curNode.next);
-	}
-	printf("%i:\tval = %i\tnext = %p\n", itemNum, curNode.val, curNode.next);
-}
-
 // scans through file until it finds an int, then returns it
-// *** not functional for ints of more than one digit ***
 int getNextInt(FILE * fp)
 {
   char cur;
@@ -64,7 +48,6 @@ int getVerb(char arg[])
 // command line argument(s) should be verbosity (optional) and input file
 int main(int argv, char * argc[])
 {
-  
   int verbose = 0; // 0 = non-verbose, 1 = verbose, 2 = show-rand
   FILE * fp = 0;
   
