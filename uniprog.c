@@ -6,51 +6,6 @@
 #include "processStruct.h" // {a, b, c, io, status}
 #include "uniprog.h" // uni header
 
-// message must come before this describing sorted / unsorted
-void printprocs(int numProcs, struct process procs [])
-{
-	int count;
-	for(count = 0; count < numProcs; count++){
-		printf(" %i ( %i %i %i %i )", numProcs, procs[count].a, procs[count].b, procs[count].c,\
-					procs[count].io);
-	}
-	printf("\n");
-}
-
-void uprintverb(int time, int NP, struct process myprocs []){
-	printf("Before cycle %5i:", time);
-	char statString[20];
-	int statVal;
-	for(int proc = 0; proc < NP; proc++){
-		if(myprocs[proc].status == 0){
-			strcpy(statString, "unstarted");
-			statVal = 0;
-		}
-		else if(myprocs[proc].status == 1){
-			strcpy(statString, "ready");
-			statVal = 0;
-		}
-		else if(myprocs[proc].status == 2){
-			strcpy(statString, "running");
-			statVal = myprocs[proc].b;
-		}
-		else if(myprocs[proc].status == 3){
-			strcpy(statString, "blocked");
-			statVal = myprocs[proc].io;
-		}
-		else if(myprocs[proc].status == 4){
-			strcpy(statString, "terminated");
-			statVal = 0;
-		}
-		else{
-			strcpy(statString, "ERROR - BAD STATUS");
-			statVal = -1;
-		}
-		printf("%14s:%6i", statString, statVal);
-	}
-	printf("\n");
-}
-
 void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs []){
 
 	randInit();
@@ -87,7 +42,7 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	while(completedProcs < NUMOFPROCS){
 		
 		if(verbose > 0){
-			uprintverb(time, NUMOFPROCS, uniprocs); // print statuses
+			printverb(time, NUMOFPROCS, uniprocs); // print statuses
 		}
 		
 		if(uniprocs[curproc].status == 2){
@@ -154,7 +109,7 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	printf("The original output was: ");
 	printprocs(NUMOFPROCS, procs);
 	printf("The (sorted) input is: ");
-	printprocs(NUMOFPROCS, procs);
+	printprocs(NUMOFPROCS, sprocs);
 	printf("\n\n");
 	
 	// print summaries of each process

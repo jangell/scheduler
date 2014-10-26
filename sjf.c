@@ -5,51 +5,6 @@
 #include "myrand.h" // random number generator, getBurst()
 #include "processStruct.h" // struct to hold processes
 
-// node struct for io linked list
-struct node
-{
-	int val;
-	struct node * next;
-};
-
-void sprintverb(int NUMOFPROCS, int time, int sjob, struct process procs [], struct node * head)
-{
-	int i;
-	printf("Before cycle");
-	printf("%6i:", time);
-	for(i = 0; i < NUMOFPROCS; i++){
-		int stat = procs[i].status;
-		char statString[20];
-		int statVal;
-		if(stat == 0){
-		  strcpy(statString, "unstarted");
-			statVal = 0;
-		}
-		else if(stat == 1){
-			strcpy(statString, "ready");
-			statVal = 0;
-		}
-		else if(stat == 2){
-			strcpy(statString, "running");
-			statVal = procs[sjob].b;
-		}
-		else if(stat == 3){
-			strcpy(statString, "blocked");
-			statVal = procs[(*(*head).next).val].io;
-		}
-		else if(stat == 4){
-			strcpy(statString, "terminated");
-			statVal = 0;
-		}
-		else{
-			strcpy(statString, "ERROR: stat > 3");
-			statVal = -1;
-		}
-		printf("\t%12s%3i", statString, statVal);
-	}
-	printf(".\n");
-}
-
 
 void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs [])
 {
@@ -60,11 +15,8 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	
 	int iotimes[NUMOFPROCS];
 	int waittimes[NUMOFPROCS];
-	int cputimes[NUMOFPROCS];
-	struct node iobase;
-	iobase.val = 0;
-	iobase.next = NULL;
-	struct node * iohead = NULL;
+	int finishtimes[NUMOFPROCS];
+	int cputime = 0;
 	
 	int i;
 	for(i = 0; i < NUMOFPROCS; i++){
@@ -76,89 +28,123 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 		// set initial values of iotimes, waittimes, and cputimes to 0
 		iotimes[i] = 0;
 		waittimes[i] = 0;
-		cputimes[i] = 0;
 	}
 	
 	int completedProcs = 0;
+	int somethingisrunning = 0;
 	int time = 0;
-	int sjob = 0;
 	
 	while(completedProcs < NUMOFPROCS){
-	
-		sprintverb(NUMOFPROCS, time, sjob, sjfprocs, iohead);
-	
-		// look for processes to start (by time)
-		for(i = 0; i < NUMOFPROCS; i++){
-			if(sjfprocs[i].a == time){
-				// initialize procedure with status and burst time
-				sjfprocs[i].status = 1;
-				sjfprocs[i].b = getBurst(sprocs[i].b);
-			}
+		
+		// check for verbosity and print if on
+		if(verbose > 0){
+			printverb(time, NUMOFPROCS, sjfprocs);
 		}
 		
-		// find new burst if next burst is zero
-		if(sjfprocs[sjob].b == 0){
-			int sjob = INT_MAX;
-			// find index of shortest remaining job
+		// check what the status of each process is and proceed accordingly
+		int procOn;
+		for(procOn = 0; procOn < NUMOFPROCS; procOn++){
+		
+			if(sjfprocs[procOn].status == 2){
+				// run process
+				sjfprocs[procOn].b--;
+				sjfprocs[procOn].c--;
+				cputime++;
+				if(sjfprocs[procOn].c == 0){
+					// terminate
+					sjfprocs[procOn].status = 4;
+					finishtimes[procOn] = time;
+					completedProcs++;
+					somethingisrunning = 0;
+				}
+				else if(sjfprocs[procOn].b == 0){
+					sjfprocs[procOn].status = 3;
+					sjfprocs[procOn].io = getBurst(sprocs[procOn].io, verbose);
+					somethingisrunning = 0;
+				}
+			}
+			else if(sjfprocs[procOn].status == 3){
+				sjfprocs[procOn].io--;
+				iotimes[procOn]++;
+				if(sjfprocs[procOn].io == 0){
+					sjfprocs[procOn].status = 1; // don't generate burst yet
+				}
+			}
+			else if(sjfprocs[procOn].status == 0 && sjfprocs[procOn].a == time){
+				sjfprocs[procOn].status = 1; // unstarted -> ready
+			}
+			else if(sjfprocs[procOn].status == 1){
+				waittimes[procOn]++;
+			}
+			
+		}
+		
+		if(somethingisrunning == 0){
+			// check to find ready process with shortest job
+			int torun = -1;
+			int minc = INT_MAX;
 			for(i = 0; i < NUMOFPROCS; i++){
-				if(sjfprocs[i].status == 1 && sjfprocs[i].c < sjob){
-					sjob = i;
+				if(sjfprocs[i].status == 1 && sjfprocs[i].c < minc){
+					torun = i;
+					minc = sjfprocs[i].c;
 				}
 			}
-			// only assign next burst if a burst is found
-			if(sjob == INT_MAX){
-				sjob = -1; // flag for no valid cpu burst to run
-			}
-		}
-		// sjob should now be the index of the next process to run
-		// OR -1, in which case nothing should run
-		
-		// run process
-		if(sjob > -1){
-			sjfprocs[sjob].status = 2;
-			sjfprocs[sjob].b--; // decrement burst time
-			sjfprocs[sjob].c--; // decrement total cpu time remaining
-			// check if we hit the end of the process
-			if(sjfprocs[sjob].c == 0){
-				// terminate process
-				sjfprocs[sjob].status = 4;
-				completedProcs++;
-			}
-			// check if we hit the end of the burst (not including the end of the whole process)
-			else if(sjfprocs[sjob].b == 0){
-				struct node nextio;
-				nextio.val = getBurst(sprocs[sjob].io, verbose); // add new io burst to l-list
-				nextio.next = NULL;
-				// add nextio to the end of the io list
-				struct node * addio = iohead;
-				printf("a\n");
-				while((*addio).next != NULL){
-					addio = (*addio).next;
-				}
-				(*addio).next = &nextio;
-				sjfprocs[sjob].status = 3;
+			if(torun == -1){}// just continue; somethingisrunning stays at 0
+			else{
+				sjfprocs[torun].status = 2;
+				sjfprocs[torun].b = getBurst(sprocs[torun].b, verbose);
+				somethingisrunning = 1;
 			}
 		}
 		
-		// check for io; if it exists, do it
-		if((*iohead).next != NULL){
-			struct node curio = (*(*iohead).next);
-			int ioindex = curio.val;
-			sjfprocs[ioindex].io--;
-			iotimes[ioindex]++;
-			// check if io burst is finished
-			if(sjfprocs[ioindex].io == 0){
-				sjfprocs[ioindex].b = getBurst(sprocs[ioindex].b, verbose);
-				sjfprocs[ioindex].status = 1;
-				// update linked list
-				(*iohead).next = curio.next;
-			}
+		if(completedProcs < NUMOFPROCS){
+			time++;
 		}
-		
-		time++;
 		
 	}
 	
-	printf("time: %i\n", time);
+	printf("The original output was: ");
+	printprocs(NUMOFPROCS, procs);
+	printf("The (sorted) input is: ");
+	printprocs(NUMOFPROCS, sprocs);
+	printf("\n\n");
+	
+	// print summaries of each process
+	
+	for(i = 0; i < NUMOFPROCS; i++){
+		printf("\n");
+		printf("Process %i:\n", i);
+		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sprocs[i].a, sprocs[i].b, sprocs[i].c, sprocs[i].io);
+		printf("\tFinishing time: %i\n", finishtimes[i]);
+		printf("\tI/O time: %i\n", iotimes[i]);
+		printf("\tWaiting time: %i\n", waittimes[i]);
+	}
+	
+	// generate values for summary below
+
+	int totalIO = 0;
+	int totalTurn = 0;
+	int totalWait = 0;
+	for(i = 0; i < NUMOFPROCS; i++){
+		totalIO += iotimes[i];
+		totalTurn += (finishtimes[i] - sprocs[i].a); // finish - start = turn
+		totalWait += waittimes[i];
+	}
+	float cpuuse = ((float) cputime) / time;
+	float iouse = ((float) totalIO) / time;
+	float through = 100. * ((float) NUMOFPROCS) / time;
+	float avgturn = ((float) totalTurn) / NUMOFPROCS;
+	float avgwait = ((float) totalWait) / NUMOFPROCS;
+	
+	// print overall summary
+	
+	printf("\n");
+	printf("Summary Data:\n");
+	printf("\tFinishing time: %i\n", time);
+	printf("\tCPU Utilization: %6f\n", cpuuse);
+	printf("\tI/O Utilization: %6f\n", iouse);
+	printf("\tThroughput: %6f processes per hundred cycles\n", through);
+	printf("\tAverage turnaround time: %6f\n", avgturn);
+	printf("\tAverage waiting time: %6f\n", avgwait);
 	
 }

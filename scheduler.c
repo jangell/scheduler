@@ -115,8 +115,8 @@ int main(int argv, char * argc[])
   // ****** DO NOT EDIT PROCS OR SORTEDPROCS ******
   // actual scheduling here
   
-	runUni(verbose, NUMOFPROCS, &procs, &sortedprocs);
+	//runUni(verbose, NUMOFPROCS, &procs, &sortedprocs);
 	//runfcfs(verbose, NUMOFPROCS, &procs, &sortedprocs);
-	//runsjf(verbose, NUMOFPROCS, &procs, &sortedprocs);
+	runsjf(verbose, NUMOFPROCS, &procs, &sortedprocs);
   
 }

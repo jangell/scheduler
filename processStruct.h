@@ -11,15 +11,7 @@ struct process
   char status; // 0=unstarted, 1=ready, 2=running/blocked (look at b & d), 3=terminated
 };
 
-// linkedList struct to sort processes
-struct listNode
-{
-	int val;
-	struct listNode * next;
-};
-
-// prints out a list
-// used primarily for error-checking
-void printList(struct listNode curNode);
+void printprocs();
+void printverb();
 
 #endif
