@@ -4,7 +4,6 @@
 #include <limits.h>
 #include "myrand.h"
 #include "processStruct.h" // {a, b, c, io, status}
-#include "uniprog.h" // uni header
 
 void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs []){
 
@@ -106,7 +105,9 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 		
 	}
 	
-	printf("The original output was: ");
+	closeRand();
+	
+	printf("The original input was: ");
 	printprocs(NUMOFPROCS, procs);
 	printf("The (sorted) input is: ");
 	printprocs(NUMOFPROCS, sprocs);

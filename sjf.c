@@ -4,7 +4,7 @@
 #include <limits.h>
 #include "myrand.h" // random number generator, getBurst()
 #include "processStruct.h" // struct to hold processes
-
+#include "sjf.h"
 
 void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs [])
 {
@@ -33,6 +33,12 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	int completedProcs = 0;
 	int somethingisrunning = 0;
 	int time = 0;
+	
+	printf("The original input was: ");
+	printprocs(NUMOFPROCS, procs);
+	printf("The (sorted) input is: ");
+	printprocs(NUMOFPROCS, sprocs);
+	printf("\nThis detailed printout gives the state and remaining burst for each process\n\n");
 	
 	while(completedProcs < NUMOFPROCS){
 		
@@ -103,16 +109,12 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 		
 	}
 	
-	printf("The original output was: ");
-	printprocs(NUMOFPROCS, procs);
-	printf("The (sorted) input is: ");
-	printprocs(NUMOFPROCS, sprocs);
-	printf("\n\n");
+	closeRand();
 	
 	// print summaries of each process
 	
 	for(i = 0; i < NUMOFPROCS; i++){
-		printf("\n");
+		printf("The scheduling algorithm used was Shortest Job First\n");
 		printf("Process %i:\n", i);
 		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sprocs[i].a, sprocs[i].b, sprocs[i].c, sprocs[i].io);
 		printf("\tFinishing time: %i\n", finishtimes[i]);
