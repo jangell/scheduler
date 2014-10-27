@@ -16,6 +16,8 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	int iotimes[NUMOFPROCS];
 	int waittimes[NUMOFPROCS];
 	int finishtimes[NUMOFPROCS];
+	int totalio = 0;
+	int ioflag = 0;
 	int cputime = 0;
 	
 	int i;
@@ -36,11 +38,13 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	
 	printf("The original input was: ");
 	printprocs(NUMOFPROCS, procs);
-	printf("The (sorted) input is: ");
+	printf("The (sorted) input is:  ");
 	printprocs(NUMOFPROCS, sprocs);
 	printf("\nThis detailed printout gives the state and remaining burst for each process\n\n");
 	
 	while(completedProcs < NUMOFPROCS){
+	
+		ioflag = 0;
 		
 		// check for verbosity and print if on
 		if(verbose > 0){
@@ -72,6 +76,7 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 			else if(sjfprocs[procOn].status == 3){
 				sjfprocs[procOn].io--;
 				iotimes[procOn]++;
+				ioflag = 1;
 				if(sjfprocs[procOn].io == 0){
 					sjfprocs[procOn].status = 1; // don't generate burst yet
 				}
@@ -103,6 +108,10 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 			}
 		}
 		
+		if(ioflag){
+			totalio++;
+		}
+		
 		if(completedProcs < NUMOFPROCS){
 			time++;
 		}
@@ -112,35 +121,32 @@ void runsjf(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	closeRand();
 	
 	// print summaries of each process
-	
+	printf("\n");
 	for(i = 0; i < NUMOFPROCS; i++){
-		printf("The scheduling algorithm used was Shortest Job First\n");
 		printf("Process %i:\n", i);
 		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sprocs[i].a, sprocs[i].b, sprocs[i].c, sprocs[i].io);
 		printf("\tFinishing time: %i\n", finishtimes[i]);
+		printf("\tTurnaround time: %i\n", (finishtimes[i] - sprocs[i].a));
 		printf("\tI/O time: %i\n", iotimes[i]);
-		printf("\tWaiting time: %i\n", waittimes[i]);
+		printf("\tWaiting time: %i\n\n", waittimes[i]);
 	}
 	
 	// generate values for summary below
 
-	int totalIO = 0;
 	int totalTurn = 0;
 	int totalWait = 0;
 	for(i = 0; i < NUMOFPROCS; i++){
-		totalIO += iotimes[i];
 		totalTurn += (finishtimes[i] - sprocs[i].a); // finish - start = turn
 		totalWait += waittimes[i];
 	}
 	float cpuuse = ((float) cputime) / time;
-	float iouse = ((float) totalIO) / time;
+	float iouse = ((float) totalio) / time;
 	float through = 100. * ((float) NUMOFPROCS) / time;
 	float avgturn = ((float) totalTurn) / NUMOFPROCS;
 	float avgwait = ((float) totalWait) / NUMOFPROCS;
 	
 	// print overall summary
 	
-	printf("\n");
 	printf("Summary Data:\n");
 	printf("\tFinishing time: %i\n", time);
 	printf("\tCPU Utilization: %6f\n", cpuuse);
