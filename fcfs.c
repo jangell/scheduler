@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <limits.h>
 #include "processStruct.h" // struct to handle processes
 #include "myrand.h" // random number generator
 
-// first thing - copy over procs into another array - DO NOT MESS WITH PROCS[]
+
 void runfcfs(int verbose, int NUMOFPROCS, struct process procs [], struct process sprocs [])
 {
 
@@ -14,11 +15,11 @@ void runfcfs(int verbose, int NUMOFPROCS, struct process procs [], struct proces
 	int iotimes[NUMOFPROCS];
 	int waittimes[NUMOFPROCS];
 	int cputime = 0;
-	int iocycles = 0;
 	int completedProcs = 0;
 	int time = 0;
 	int procOn;
-	int somerunflag = 0;
+	int somethingisrunning = 0;
+	int lastran[NUMOFPROCS];
 	
 	struct process fcprocs[NUMOFPROCS];
 	int i;
@@ -31,95 +32,68 @@ void runfcfs(int verbose, int NUMOFPROCS, struct process procs [], struct proces
 		finishtimes[i] = 0;
 		iotimes[i] = 0;
 		waittimes[i] = 0;
+		lastran[i] = fcprocs[i].a;
 	}
 	
 	while(completedProcs < NUMOFPROCS){
-	
-		int iohappened = 0;
 		
 		if(verbose > 0){
 			printverb(time, NUMOFPROCS, fcprocs);
 		}
 		
 		for(procOn = 0; procOn < NUMOFPROCS; procOn++){
-		
-			// running
+			
 			if(fcprocs[procOn].status == 2){
+				// running
 				fcprocs[procOn].b--;
 				fcprocs[procOn].c--;
 				cputime++;
 				if(fcprocs[procOn].c == 0){
-					// terminate process
-					completedProcs++;
+					// terminate it
 					fcprocs[procOn].status = 4;
 					finishtimes[procOn] = time;
-					somerunflag = 0;
+					completedProcs++;
+					somethingisrunning = 0;
 				}
 				else if(fcprocs[procOn].b == 0){
-					fcprocs[procOn].io = getBurst(sprocs[procOn].io, verbose);
+					// update status and last-ran-time
 					fcprocs[procOn].status = 3;
-					somerunflag = 0;
+					fcprocs[procOn].io = getBurst(sprocs[procOn].io, verbose);
+					somethingisrunning = 0;
 				}
 			}
-			
-			// io
 			else if(fcprocs[procOn].status == 3){
 				fcprocs[procOn].io--;
 				iotimes[procOn]++;
-				iohappened = 1;
 				if(fcprocs[procOn].io == 0){
-					fcprocs[procOn].b = getBurst(sprocs[procOn].b, verbose);
+					lastran[procOn] = time;
 					fcprocs[procOn].status = 1;
 				}
 			}
-			
 			else if(fcprocs[procOn].status == 1){
 				waittimes[procOn]++;
 			}
+			else if(fcprocs[procOn].status == 0 && fcprocs[procOn].a == time){
+				fcprocs[procOn].status = 1;
+			}
 			
-			// check to initialize
-			else if(fcprocs[procOn].status == 0){
-				if(fcprocs[procOn].a == time){
-					int n;
-					int runningflag = 0;
-					for(n = 0; n < NUMOFPROCS; n++){
-						if(fcprocs[n].status == 2){
-							runningflag = 1;
-						}
-					}
-					if(runningflag == 0){ // start this one!
-						fcprocs[procOn].status = 2;
-					}
-					else{ // already something running
-						fcprocs[procOn].status = 1;
-					}
-					fcprocs[procOn].b = getBurst(sprocs[procOn].b, verbose);
-				}
-			}
-		
 		}
 		
-		if(completedProcs < NUMOFPROCS && !somerunflag){
-			int curproc = procOn + 1;
-			while(curproc < NUMOFPROCS){
-				if(fcprocs[curproc].status == 1){
-					fcprocs[curproc].status = 2;
-					break;
+		if(!somethingisrunning){
+			int torunindex = -1;
+			int torunlast = INT_MAX;
+			for(i = 0; i < NUMOFPROCS; i++){
+				if(fcprocs[i].status == 1 && lastran[i] < torunlast){
+					torunindex = i;
+					torunlast = lastran[i];
 				}
 			}
-			if(curproc == NUMOFPROCS){
-				curproc = 0;
-				while(curproc <= procOn){
-					if(fcprocs[curproc].status == 1){
-						fcprocs[curproc].status = 2;
-						break;
-					}
-				}
+			if(torunindex == -1){} // just keep going; increment time and try again next cycle
+			else{
+				fcprocs[torunindex].status = 2;
+				somethingisrunning = 1;
+				fcprocs[torunindex].b = getBurst(sprocs[torunindex].b, verbose);
 			}
-		}
-		
-		if(iohappened){
-			iocycles++;
 		}
 		
 		if(completedProcs < NUMOFPROCS){ // don't increment time if all process have completed
@@ -127,4 +101,49 @@ void runfcfs(int verbose, int NUMOFPROCS, struct process procs [], struct proces
 		}
 		
 	}
+	
+	printf("The original output was: ");
+	printprocs(NUMOFPROCS, procs);
+	printf("The (sorted) input is: ");
+	printprocs(NUMOFPROCS, sprocs);
+	printf("\nThe scheduling algorithm used was First Come First Served\n");
+	
+	// print summaries of each process
+	
+	for(i = 0; i < NUMOFPROCS; i++){
+		printf("\n");
+		printf("Process %i:\n", i);
+		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sprocs[i].a, sprocs[i].b, sprocs[i].c, sprocs[i].io);
+		printf("\tFinishing time: %i\n", finishtimes[i]);
+		printf("\tI/O time: %i\n", iotimes[i]);
+		printf("\tWaiting time: %i\n", waittimes[i]);
+	}
+	
+	// generate values for summary below
+
+	int totalIO = 0;
+	int totalTurn = 0;
+	int totalWait = 0;
+	for(i = 0; i < NUMOFPROCS; i++){
+		totalIO += iotimes[i];
+		totalTurn += (finishtimes[i] - sprocs[i].a); // finish - start = turn
+		totalWait += waittimes[i];
+	}
+	float cpuuse = ((float) cputime) / time;
+	float iouse = ((float) totalIO) / time;
+	float through = 100. * ((float) NUMOFPROCS) / time;
+	float avgturn = ((float) totalTurn) / NUMOFPROCS;
+	float avgwait = ((float) totalWait) / NUMOFPROCS;
+	
+	// print overall summary
+	
+	printf("\n");
+	printf("Summary Data:\n");
+	printf("\tFinishing time: %i\n", time);
+	printf("\tCPU Utilization: %6f\n", cpuuse);
+	printf("\tI/O Utilization: %6f\n", iouse);
+	printf("\tThroughput: %6f processes per hundred cycles\n", through);
+	printf("\tAverage turnaround time: %6f\n", avgturn);
+	printf("\tAverage waiting time: %6f\n", avgwait);
+	
 }

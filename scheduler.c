@@ -10,8 +10,9 @@
 #include "myrand.h" // random number generator
 #include "processStruct.h" // struct process {a, b, c, io, status} & linked list
 #include "uniprog.h" // uniprogramming
-#include "fcfs.h" // fcfs
-#include "sjf.h" // sjf
+#include "fcfs.h" // first come first serve
+#include "sjf.h" // shortest job first
+#include "rr.h" // round robin
 
 // scans through file until it finds an int, then returns it
 int getNextInt(FILE * fp)
@@ -117,6 +118,7 @@ int main(int argv, char * argc[])
   
 	//runUni(verbose, NUMOFPROCS, &procs, &sortedprocs);
 	//runfcfs(verbose, NUMOFPROCS, &procs, &sortedprocs);
-	runsjf(verbose, NUMOFPROCS, &procs, &sortedprocs);
+	//runsjf(verbose, NUMOFPROCS, &procs, &sortedprocs);
+  runrr(verbose, NUMOFPROCS, &procs, &sortedprocs);
   
 }
