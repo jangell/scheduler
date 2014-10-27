@@ -117,8 +117,8 @@ int main(int argv, char * argc[])
   // actual scheduling here
   
 	//runUni(verbose, NUMOFPROCS, &procs, &sortedprocs);
-	//runfcfs(verbose, NUMOFPROCS, &procs, &sortedprocs);
+	runfcfs(verbose, NUMOFPROCS, &procs, &sortedprocs);
 	//runsjf(verbose, NUMOFPROCS, &procs, &sortedprocs);
-  runrr(verbose, NUMOFPROCS, &procs, &sortedprocs);
+  //runrr(verbose, NUMOFPROCS, &procs, &sortedprocs);
   
 }
