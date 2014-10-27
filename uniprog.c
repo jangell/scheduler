@@ -37,6 +37,12 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	int time = 0;
 	int ioburstflag = 0; // flag to generate new io burst
 	
+	printf("The original input was: ");
+	printprocs(NUMOFPROCS, procs);
+	printf("The (sorted) input is:  ");
+	printprocs(NUMOFPROCS, sprocs);
+	printf("\nThis detailed printout gives the state and remaining burst for each process\n\n");
+	
 	// actual cycle loop
 	while(completedProcs < NUMOFPROCS){
 		
@@ -107,21 +113,15 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	
 	closeRand();
 	
-	printf("The original input was: ");
-	printprocs(NUMOFPROCS, procs);
-	printf("The (sorted) input is: ");
-	printprocs(NUMOFPROCS, sprocs);
-	printf("\n\n");
-	
 	// print summaries of each process
-	
+	printf("\n");
 	for(i = 0; i < NUMOFPROCS; i++){
-		printf("\n");
 		printf("Process %i:\n", i);
 		printf("\t(A,B,C,IO) = (%i,%i,%i,%i)\n", sprocs[i].a, sprocs[i].b, sprocs[i].c, sprocs[i].io);
 		printf("\tFinishing time: %i\n", finishtimes[i]);
+		printf("\tTurnaround time: %i\n", (finishtimes[i] - sprocs[i].a));
 		printf("\tI/O time: %i\n", iotimes[i]);
-		printf("\tWaiting time: %i\n", waittimes[i]);
+		printf("\tWaiting time: %i\n\n", waittimes[i]);
 	}
 	
 	// generate values for summary below
@@ -142,7 +142,6 @@ void runUni(int verbose, int NUMOFPROCS, struct process procs [], struct process
 	
 	// print overall summary
 	
-	printf("\n");
 	printf("Summary Data:\n");
 	printf("\tFinishing time: %i\n", time);
 	printf("\tCPU Utilization: %6f\n", cpuuse);
